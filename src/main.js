@@ -6,6 +6,12 @@ import { ao } from "three/examples/jsm/tsl/display/GTAONode.js";
 import { denoise } from "three/examples/jsm/tsl/display/DenoiseNode.js";
 import * as dat from "dat.gui";
 
+/******************/
+//  TSL Cubes
+//  @loloarmdz
+//  nuevosmiedos.xyz
+/******************/
+
 const Resources = {
     font:undefined    
 }
@@ -144,17 +150,21 @@ function init()
     })().compute(count);
 
     //  set material
+    const position_at = position_buffer.toAttribute();
+    const properties_att = properties_buffer.toAttribute();
+    const instance_scale = properties_att.x;
 
-    const scaled_position = positionLocal.mul(properties_buffer.toAttribute().x).add(position_buffer.toAttribute());
-    const offset_y = position_buffer.toAttribute().y.mul(0.9)
-    const final_position = rotate(scaled_position,vec3(0.0,(((offset_y).add(u_offset_noise.mul(sin(offset_y))).mul(0.5)).mul(Math.PI*.1)),0.0));
+    const scaled_position = positionLocal.mul(instance_scale).add(position_at);
+    const offset_y = position_at.y.mul(0.9)
 
-    const emissive_color = uniform(new THREE.Color(params.emissive_color));
+    const rotation_vec = vec3(0.0,(((offset_y).add(u_offset_noise).mul(0.5)).mul(Math.PI*.1)),0.0);
+    const final_position = rotate(scaled_position,rotation_vec);
+
     instance.material.positionNode = final_position;
     instance.material.colorNode = u_cube_color;
 
-    const mixer = step(0.99,sin(u_offset_noise.add(offset_y.mul(2.0)).mul(0.5).add(0.5)));
-    instance.material.emissiveNode = u_emissive_cube_color.mul(properties_buffer.toAttribute().y).mul(float(5.0).add(mixer.mul(20.0)));
+    const mixer = step(0.5,sin(u_offset_noise.add(offset_y.mul(2.0)).mul(0.5).add(0.5)));
+    instance.material.emissiveNode = u_emissive_cube_color.mul(properties_att.y).mul(float(5.0).add(mixer.mul(20.0)));
   
     scene.add(instance)
 
@@ -197,7 +207,6 @@ function init()
             cursor.x = event.clientX / sizes.width - 0.5
             let ny =  event.clientY / sizes.height - 0.5
             cursor.dy += (ny-cursor.y)*amp*(isMobile ? 0.1 : .01);
-            
             cursor.y = ny;
         }
     },{ passive: false })
@@ -237,7 +246,7 @@ function init()
     renderer.setAnimationLoop(animate);
     function animate() { 
 
-        u_offset_noise.value+=cursor.dy*.1;
+        u_offset_noise.value+=cursor.dy*.2;
         renderer.computeAsync(update_buffer);
         composer.renderAsync();
     }
